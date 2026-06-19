@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueries } from "@tanstack/react-query";
-import { zodValidator } from "@tanstack/zod-adapter";
+
 import { z } from "zod";
 import { useMemo } from "react";
 import {
