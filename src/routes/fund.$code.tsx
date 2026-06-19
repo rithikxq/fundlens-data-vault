@@ -113,10 +113,21 @@ function FundPage() {
     [scheme.data],
   );
   const inception = useMemo(() => sinceInception(scheme.data), [scheme.data]);
+  const maxDD = useMemo(() => maxDrawdown(scheme.data), [scheme.data]);
+  const vol = useMemo(() => volatility(scheme.data), [scheme.data]);
+  const bestWorst1M = useMemo(() => bestWorstPeriods(scheme.data, 30), [scheme.data]);
+  const bestWorst1Y = useMemo(() => bestWorstPeriods(scheme.data, 365), [scheme.data]);
 
   const navMin = filtered.length ? Math.min(...filtered.map((d) => d.nav)) : 0;
   const navMax = filtered.length ? Math.max(...filtered.map((d) => d.nav)) : 0;
   const yPad = (navMax - navMin) * 0.1 || 1;
+  const ddOverlay = useMemo(() => {
+    if (!maxDD || !filtered.length) return null;
+    const startTs = parseDDate(maxDD.peakDate);
+    const endTs = parseDDate(maxDD.troughDate);
+    if (startTs < filtered[0].ts || endTs > filtered[filtered.length - 1].ts) return null;
+    return { startTs, endTs };
+  }, [maxDD, filtered]);
 
   return (
     <div className="min-h-screen bg-background">
