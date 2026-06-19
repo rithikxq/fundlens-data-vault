@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ScreenerRouteImport } from './routes/screener'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FundCodeRouteImport } from './routes/fund.$code'
 
+const ScreenerRoute = ScreenerRouteImport.update({
+  id: '/screener',
+  path: '/screener',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
@@ -32,35 +38,46 @@ const FundCodeRoute = FundCodeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
+  '/screener': typeof ScreenerRoute
   '/fund/$code': typeof FundCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
+  '/screener': typeof ScreenerRoute
   '/fund/$code': typeof FundCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
+  '/screener': typeof ScreenerRoute
   '/fund/$code': typeof FundCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/compare' | '/fund/$code'
+  fullPaths: '/' | '/compare' | '/screener' | '/fund/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/compare' | '/fund/$code'
-  id: '__root__' | '/' | '/compare' | '/fund/$code'
+  to: '/' | '/compare' | '/screener' | '/fund/$code'
+  id: '__root__' | '/' | '/compare' | '/screener' | '/fund/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CompareRoute: typeof CompareRoute
+  ScreenerRoute: typeof ScreenerRoute
   FundCodeRoute: typeof FundCodeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/screener': {
+      id: '/screener'
+      path: '/screener'
+      fullPath: '/screener'
+      preLoaderRoute: typeof ScreenerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compare': {
       id: '/compare'
       path: '/compare'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CompareRoute: CompareRoute,
+  ScreenerRoute: ScreenerRoute,
   FundCodeRoute: FundCodeRoute,
 }
 export const routeTree = rootRouteImport
