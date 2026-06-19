@@ -5,28 +5,29 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, GitCompare, Loader2 } from "lucide-react";
+import { ArrowLeft, GitCompare, Loader2, TrendingDown, TrendingUp as TrendUp } from "lucide-react";
 import { fetchScheme } from "@/lib/mfapi";
 import {
-  formatINR,
+  bestWorstPeriods,
   formatPct,
-  lumpsumProjection,
+  maxDrawdown,
   rollingReturns,
   sinceInception,
-  sipProjection,
+  volatility,
 } from "@/lib/finance";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MonthlyHeatmap } from "@/components/monthly-heatmap";
+import { RollingReturnsChart } from "@/components/rolling-returns-chart";
+import { FeeImpactCalculator } from "@/components/fee-impact";
 
 function schemeQuery(code: string) {
   return queryOptions({
