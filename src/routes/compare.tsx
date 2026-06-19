@@ -28,7 +28,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/compare")({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema.parse,
   head: () => ({
     meta: [
       { title: "Compare mutual funds — FundLens" },
@@ -56,7 +56,7 @@ function ComparePage() {
   const [qa, qb] = queries;
 
   const setSlot = (slot: "a" | "b", code?: string) =>
-    navigate({ search: (prev) => ({ ...prev, [slot]: code }) });
+    navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, [slot]: code }) });
 
   return (
     <div className="min-h-screen bg-background">
