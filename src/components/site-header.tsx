@@ -20,6 +20,12 @@ export function SiteHeader() {
             Search
           </Link>
           <Link
+            to="/screener"
+            className="rounded-md px-3 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground [&.active]:bg-muted [&.active]:text-foreground"
+          >
+            Screener
+          </Link>
+          <Link
             to="/compare"
             className="rounded-md px-3 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground [&.active]:bg-muted [&.active]:text-foreground"
           >
