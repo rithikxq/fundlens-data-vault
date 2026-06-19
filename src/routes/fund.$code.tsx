@@ -224,21 +224,82 @@ function FundPage() {
                   labelFormatter={(t) => new Date(t as number).toLocaleDateString("en-IN")}
                   formatter={(v: number) => [`₹${v.toFixed(4)}`, "NAV"]}
                 />
+                {ddOverlay && (
+                  <ReferenceArea
+                    x1={ddOverlay.startTs}
+                    x2={ddOverlay.endTs}
+                    fill="#ef4444"
+                    fillOpacity={0.12}
+                    stroke="#ef4444"
+                    strokeOpacity={0.4}
+                  />
+                )}
                 <Area
                   type="monotone"
                   dataKey="nav"
-                  stroke="hsl(var(--primary))"
+                  stroke="var(--color-primary)"
                   strokeWidth={2}
                   fill="url(#navfill)"
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          {ddOverlay && maxDD && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Shaded: max drawdown {formatPct(maxDD.drawdown)} from {maxDD.peakDate} to {maxDD.troughDate}.
+            </p>
+          )}
         </Card>
 
+        {/* Risk metrics */}
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+              <TrendingDown className="h-3.5 w-3.5 text-red-400" /> Max drawdown
+            </div>
+            <div className="mt-2 text-2xl font-bold text-red-400">
+              {maxDD ? formatPct(maxDD.drawdown) : "—"}
+            </div>
+            {maxDD && (
+              <div className="mt-1 text-xs text-muted-foreground">
+                {maxDD.peakDate} → {maxDD.troughDate}
+                {maxDD.recoveryDays != null
+                  ? ` · recovered in ${maxDD.recoveryDays}d`
+                  : " · not yet recovered"}
+              </div>
+            )}
+          </Card>
+          <Card className="p-4">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Annualised volatility</div>
+            <div className="mt-2 text-2xl font-bold">{vol != null ? formatPct(vol) : "—"}</div>
+            <div className="mt-1 text-xs text-muted-foreground">σ of daily log returns × √252</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Inception CAGR</div>
+            <div className="mt-2 text-2xl font-bold">
+              {inception ? formatPct(inception.cagr) : "—"}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {inception ? `${inception.years.toFixed(1)} years of history` : "—"}
+            </div>
+          </Card>
+        </div>
+
+        {/* Best & worst periods */}
         <Card className="mt-6 p-4">
-          <h2 className="mb-3 text-sm font-semibold">Rolling returns</h2>
-          <div className="overflow-x-auto">
+          <h2 className="mb-3 text-sm font-semibold">Best & worst periods</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <PeriodBlock label="1-month window" data={bestWorst1M} />
+            <PeriodBlock label="1-year window" data={bestWorst1Y} />
+          </div>
+        </Card>
+
+        {/* Rolling returns */}
+        <Card className="mt-6 p-4">
+          <h2 className="mb-3 text-sm font-semibold">Rolling CAGR — how often did this fund lose money?</h2>
+          <RollingReturnsChart data={scheme.data} />
+
+          <div className="mt-6 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs uppercase text-muted-foreground">
@@ -275,13 +336,25 @@ function FundPage() {
           </div>
         </Card>
 
-        <Calculator
+        {/* Monthly heatmap */}
+        <Card className="mt-6 p-4">
+          <h2 className="mb-3 text-sm font-semibold">Monthly returns heatmap</h2>
+          <MonthlyHeatmap data={scheme.data} />
+        </Card>
+
+        {/* Fee impact / calculator */}
+        <FeeImpactCalculator
           defaultCagr={rolling["5Y"]?.cagr ?? rolling["3Y"]?.cagr ?? inception?.cagr ?? 0.12}
         />
       </main>
       <SiteFooter />
     </div>
   );
+}
+
+function parseDDate(s: string): number {
+  const [dd, mm, yyyy] = s.split("-");
+  return new Date(`${yyyy}-${mm}-${dd}T00:00:00Z`).getTime();
 }
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
@@ -294,84 +367,39 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-function Calculator({ defaultCagr }: { defaultCagr: number }) {
-  const [years, setYears] = useState(10);
-  const [expense, setExpense] = useState(0.5);
-  const [cagrPct, setCagrPct] = useState(+(defaultCagr * 100).toFixed(2));
-  const [sip, setSip] = useState(10000);
-  const [lump, setLump] = useState(100000);
-
-  const sipRes = sipProjection(sip, cagrPct / 100, years, expense);
-  const lumpRes = lumpsumProjection(lump, cagrPct / 100, years, expense);
-
+function PeriodBlock({
+  label,
+  data,
+}: {
+  label: string;
+  data: { best: { startDate: string; endDate: string; pct: number } | null; worst: { startDate: string; endDate: string; pct: number } | null };
+}) {
   return (
-    <Card className="mt-6 p-4">
-      <h2 className="mb-1 text-sm font-semibold">Returns calculator</h2>
-      <p className="mb-4 text-xs text-muted-foreground">
-        Projects future value using a CAGR you choose, net of the fund's expense ratio. Pre-filled
-        with the 5Y historical CAGR.
-      </p>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="rounded-lg border bg-card/50 p-3">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-3 flex items-start gap-3">
+        <TrendUp className="mt-0.5 h-4 w-4 text-emerald-400" />
         <div>
-          <Label className="text-xs">Expected CAGR (%)</Label>
-          <Input type="number" step="0.1" value={cagrPct} onChange={(e) => setCagrPct(+e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">Expense ratio (%)</Label>
-          <Input type="number" step="0.01" value={expense} onChange={(e) => setExpense(+e.target.value)} />
-        </div>
-        <div className="col-span-2">
-          <Label className="text-xs">Duration: {years} years</Label>
-          <input
-            type="range"
-            min={1}
-            max={30}
-            value={years}
-            onChange={(e) => setYears(+e.target.value)}
-            className="mt-2 w-full accent-[hsl(var(--primary))]"
-          />
+          <div className="text-sm font-semibold text-emerald-400">
+            {data.best ? formatPct(data.best.pct) : "—"}
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            {data.best ? `${data.best.startDate} → ${data.best.endDate}` : "—"}
+          </div>
         </div>
       </div>
-
-      <Tabs defaultValue="sip" className="mt-5">
-        <TabsList>
-          <TabsTrigger value="sip">SIP</TabsTrigger>
-          <TabsTrigger value="lump">Lumpsum</TabsTrigger>
-        </TabsList>
-        <TabsContent value="sip" className="mt-3">
-          <div className="mb-3 max-w-xs">
-            <Label className="text-xs">Monthly investment (₹)</Label>
-            <Input type="number" step="500" value={sip} onChange={(e) => setSip(+e.target.value)} />
+      <div className="mt-3 flex items-start gap-3">
+        <TrendingDown className="mt-0.5 h-4 w-4 text-red-400" />
+        <div>
+          <div className="text-sm font-semibold text-red-400">
+            {data.worst ? formatPct(data.worst.pct) : "—"}
           </div>
-          <Outcome
-            invested={sipRes.invested}
-            future={sipRes.future}
-            gain={sipRes.gain}
-          />
-        </TabsContent>
-        <TabsContent value="lump" className="mt-3">
-          <div className="mb-3 max-w-xs">
-            <Label className="text-xs">One-time investment (₹)</Label>
-            <Input type="number" step="1000" value={lump} onChange={(e) => setLump(+e.target.value)} />
+          <div className="text-[11px] text-muted-foreground">
+            {data.worst ? `${data.worst.startDate} → ${data.worst.endDate}` : "—"}
           </div>
-          <Outcome
-            invested={lumpRes.invested}
-            future={lumpRes.future}
-            gain={lumpRes.gain}
-          />
-        </TabsContent>
-      </Tabs>
-    </Card>
-  );
-}
-
-function Outcome({ invested, future, gain }: { invested: number; future: number; gain: number }) {
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <Stat label="Invested" value={formatINR(invested)} />
-      <Stat label="Gain" value={formatINR(gain)} />
-      <Stat label="Future value" value={formatINR(future)} />
+        </div>
+      </div>
     </div>
   );
 }
+
