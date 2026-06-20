@@ -118,8 +118,34 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="flex min-h-screen flex-col">
+        {/* Global Navigation Bar */}
+        <nav className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
+          <div className="text-xl font-bold tracking-tight text-foreground">
+            FundLens <span className="text-blue-500">+ Stocks</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <Link 
+              to="/" 
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground [&.active]:font-semibold [&.active]:text-foreground"
+            >
+              Mutual Funds
+            </Link>
+            <Link 
+              to="/stocks" 
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground [&.active]:font-semibold [&.active]:text-foreground"
+            >
+              Live Stocks
+            </Link>
+          </div>
+        </nav>
+        
+        {/* Main Content Area */}
+        <main className="flex-1">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </main>
+      </div>
     </QueryClientProvider>
   );
 }

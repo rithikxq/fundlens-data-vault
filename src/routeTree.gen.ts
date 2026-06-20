@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StocksRouteImport } from './routes/stocks'
 import { Route as ScreenerRouteImport } from './routes/screener'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FundCodeRouteImport } from './routes/fund.$code'
 
+const StocksRoute = StocksRouteImport.update({
+  id: '/stocks',
+  path: '/stocks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScreenerRoute = ScreenerRouteImport.update({
   id: '/screener',
   path: '/screener',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/screener': typeof ScreenerRoute
+  '/stocks': typeof StocksRoute
   '/fund/$code': typeof FundCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/screener': typeof ScreenerRoute
+  '/stocks': typeof StocksRoute
   '/fund/$code': typeof FundCodeRoute
 }
 export interface FileRoutesById {
@@ -52,25 +60,34 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/screener': typeof ScreenerRoute
+  '/stocks': typeof StocksRoute
   '/fund/$code': typeof FundCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/compare' | '/screener' | '/fund/$code'
+  fullPaths: '/' | '/compare' | '/screener' | '/stocks' | '/fund/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/compare' | '/screener' | '/fund/$code'
-  id: '__root__' | '/' | '/compare' | '/screener' | '/fund/$code'
+  to: '/' | '/compare' | '/screener' | '/stocks' | '/fund/$code'
+  id: '__root__' | '/' | '/compare' | '/screener' | '/stocks' | '/fund/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CompareRoute: typeof CompareRoute
   ScreenerRoute: typeof ScreenerRoute
+  StocksRoute: typeof StocksRoute
   FundCodeRoute: typeof FundCodeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/stocks': {
+      id: '/stocks'
+      path: '/stocks'
+      fullPath: '/stocks'
+      preLoaderRoute: typeof StocksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/screener': {
       id: '/screener'
       path: '/screener'
@@ -106,8 +123,19 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CompareRoute: CompareRoute,
   ScreenerRoute: ScreenerRoute,
+  StocksRoute: StocksRoute,
   FundCodeRoute: FundCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
